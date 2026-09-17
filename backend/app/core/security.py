@@ -53,7 +53,6 @@ def verify_token(token: str) -> dict[str, Any] | None:
             token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
-            options={"verify_exp": False},
         )
         return payload
     except JWTError:

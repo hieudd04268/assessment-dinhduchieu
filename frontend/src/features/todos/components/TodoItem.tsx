@@ -5,7 +5,6 @@ import type { Todo } from "../api/todos";
 
 interface TodoItemProps {
   todo: Todo;
-  index: number;
   onToggle: (todo: Todo) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: string) => void;

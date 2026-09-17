@@ -1,7 +1,9 @@
 """Auth tests."""
 
 import pytest
+from datetime import timedelta
 from httpx import AsyncClient
+from app.core.security import create_access_token, create_refresh_token
 
 
 @pytest.mark.asyncio
@@ -75,3 +77,59 @@ async def test_logout(client: AsyncClient):
     )
     assert response.status_code == 200
     assert response.json()["message"] == "Successfully logged out"
+
+
+@pytest.mark.asyncio
+async def test_expired_token_rejected(client: AsyncClient):
+    """Test that expired JWT access token is rejected."""
+    # Create a token that expires immediately (negative timedelta)
+    expired_token = create_access_token(
+        data={"sub": "00000000-0000-0000-0000-000000000001"},
+        expires_delta=timedelta(seconds=-1),
+    )
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {expired_token}"},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_tampered_token_rejected(client: AsyncClient):
+    """Test that tampered JWT access token is rejected."""
+    # Create a valid token
+    valid_token = create_access_token(data={"sub": "00000000-0000-0000-0000-000000000001"})
+
+    # Tamper with the token (change last character)
+    tampered_token = valid_token[:-1] + ("x" if valid_token[-1] != "x" else "y")
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {tampered_token}"},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_invalid_token_rejected(client: AsyncClient):
+    """Test that completely invalid token is rejected."""
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": "Bearer invalid.token.here"},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_not_usable_as_access_token(client: AsyncClient):
+    """Test that a refresh token cannot be used as an access token."""
+    refresh_token = create_refresh_token(
+        data={"sub": "00000000-0000-0000-0000-000000000001"}
+    )
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {refresh_token}"},
+    )
+    assert response.status_code == 401

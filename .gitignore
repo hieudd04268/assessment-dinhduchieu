@@ -6,7 +6,7 @@ venv/
 .venv/
 
 # Environment
-# .env
+.env
 *.env.local
 
 # IDE
@@ -31,5 +31,3 @@ docs/ANSWER_KEY.md
 # OS
 .DS_Store
 Thumbs.db
-
-docs/
